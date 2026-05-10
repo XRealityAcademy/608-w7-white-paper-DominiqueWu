@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Online Program Design Analysis, A White Paper</title>
+<template id="__bundler_thumbnail" data-bg-color="#16243f">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect x="240" y="120" width="720" height="560" fill="#f6f1e7"/>
+    <rect x="240" y="120" width="720" height="64" fill="#16243f"/>
+    <rect x="240" y="184" width="720" height="10" fill="#b86a2b"/>
+    <rect x="300" y="260" width="420" height="22" fill="#b86a2b"/>
+    <rect x="300" y="304" width="600" height="44" fill="#16243f"/>
+    <rect x="300" y="360" width="520" height="44" fill="#16243f"/>
+    <rect x="300" y="416" width="380" height="44" fill="#b86a2b"/>
+    <rect x="300" y="500" width="600" height="6" fill="#d8cfba"/>
+    <rect x="300" y="524" width="600" height="6" fill="#d8cfba"/>
+    <rect x="300" y="548" width="440" height="6" fill="#d8cfba"/>
+    <rect x="240" y="616" width="720" height="64" fill="#ece4d2"/>
+    <rect x="240" y="616" width="160" height="6" fill="#16243f"/>
+    <circle cx="880" cy="648" r="22" fill="none" stroke="#16243f" stroke-width="2"/>
+  </svg>
+</template>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#171614;
+    --ink-soft:#3a3733;
+    --ink-mute:#6e6862;
+    --paper:#f6f1e7;
+    --paper-edge:#ece4d2;
+    --rule:#d8cfba;
+    --rule-soft:#e6dfcc;
+    --navy:#16243f;
+    --navy-2:#243a63;
+    --ochre:#b86a2b;
+    --ochre-soft:#e3a76a;
+    --gold:#d8a83a;
+    --teal:#2a6f6a;
+    --cream:#fbf7ed;
+    --cream-2:#f1ead8;
+    --highlight:#fbe9c7;
+    --page-w: 8.5in;
+    --page-h: 11in;
+    --margin-x: 0.85in;
+    --margin-y: 0.85in;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#1a1815;
+    color:var(--ink);
+    font-family:"Source Serif 4", Georgia, serif;
+    font-size:10.5pt;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    font-feature-settings:"kern","liga","onum";
+  }
+  .stack{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:24px;
+    padding:36px 24px 80px;
+  }
+  .page{
+    width:var(--page-w);
+    min-height:var(--page-h);
+    background:var(--paper);
+    color:var(--ink);
+    padding:var(--margin-y) var(--margin-x);
+    position:relative;
+    box-shadow:0 1px 2px rgba(0,0,0,.18), 0 24px 48px rgba(0,0,0,.32);
+    overflow:hidden;
+  }
+  .page--cover{
+    padding:0;
+    background:var(--paper);
+  }
+
+  /* ---------- Typography ---------- */
+  h1,h2,h3,h4{
+    font-family:"Bricolage Grotesque", "Source Serif 4", Georgia, serif;
+    font-weight:600;
+    color:var(--navy);
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  h2.section{
+    font-size:22pt;
+    line-height:1.05;
+    letter-spacing:-0.02em;
+    margin:0 0 6px;
+  }
+  h3.area{
+    font-size:14pt;
+    line-height:1.2;
+    margin:0 0 2px;
+  }
+  h4.label{
+    font-family:"JetBrains Mono", ui-monospace, monospace;
+    font-size:7.5pt;
+    font-weight:600;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--ochre);
+    margin:0;
+  }
+  p{margin:0 0 8pt;}
+  a{color:var(--navy);text-decoration:underline;text-decoration-color:var(--ochre-soft);text-underline-offset:2px;}
+  a:hover{color:var(--ochre);}
+  strong{font-weight:600;color:var(--ink);}
+  em{font-style:italic;}
+
+  /* ---------- Page header / footer ---------- */
+  .runner{
+    position:absolute;
+    left:var(--margin-x);
+    right:var(--margin-x);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-family:"JetBrains Mono", ui-monospace, monospace;
+    font-size:7pt;
+    font-weight:500;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+  }
+  .runner--top{top:0.45in;}
+  .runner--bot{bottom:0.45in;}
+  .runner .mark{display:inline-flex;align-items:center;gap:8px;}
+  .runner .swatch{width:9px;height:9px;background:var(--ochre);display:inline-block;}
+
+  /* ---------- COVER ---------- */
+  .cover{
+    height:var(--page-h);
+    display:grid;
+    grid-template-rows:1.2in 1fr 1.4in;
+    position:relative;
+  }
+  .cover__bar{
+    background:var(--paper);
+    color:var(--navy);
+    padding:0 var(--margin-x);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    font-family:"JetBrains Mono", ui-monospace, monospace;
+    font-size:7.5pt;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    position:relative;
+    white-space:nowrap;
+    border-bottom:1px solid var(--rule);
+  }
+  .cover__bar .meta{color:var(--ink-mute);}
+  .cover__bar .meta{flex:none;}
+  .cover__logo{flex:1;min-width:0;}
+  .cover__logo .name{
+    font-weight:600;
+    letter-spacing:0.2em;
+  }
+  .cover__bar::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:6px;
+    background:var(--ochre);
+  }
+  .cover__logo{
+    display:flex;align-items:center;gap:12px;
+  }
+  .cover__logo .glyph{
+    height:40px;
+    padding:0;
+    background:transparent;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    line-height:0;
+  }
+  .cover__logo .glyph img{
+    height:28px;
+    width:auto;
+    display:block;
+  }
+  .cover__logo .name{font-weight:600;}
+  .cover__bar .meta{color:var(--cream-2);}
+
+  .cover__body{
+    padding: 0.6in var(--margin-x) 0;
+    display:grid;
+    grid-template-columns:1fr;
+    align-content:start;
+    gap:0.4in;
+  }
+  .cover__kicker{
+    display:flex;align-items:baseline;gap:14px;
+    font-family:"JetBrains Mono", ui-monospace, monospace;
+    font-size:8pt;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--ochre);
+    font-weight:600;
+  }
+  .cover__kicker .num{
+    color:var(--navy);
+    background:var(--cream-2);
+    padding:4px 8px;
+    letter-spacing:0.18em;
+  }
+  .cover__title{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:54pt;
+    line-height:0.96;
+    letter-spacing:-0.035em;
+    color:var(--navy);
+    font-weight:600;
+    margin:0;
+    text-wrap:balance;
+  }
+  .cover__title .accent{
+    color:var(--ochre);
+    font-style:italic;
+    font-weight:500;
+  }
+  .cover__sub{
+    font-family:"Source Serif 4", serif;
+    font-size:16pt;
+    line-height:1.28;
+    color:var(--ink-soft);
+    font-weight:300;
+    max-width:6.6in;
+    text-wrap:pretty;
+    font-style:italic;
+  }
+
+  .cover__abstract{
+    margin-top:0.2in;
+    border-top:1px solid var(--rule);
+    padding-top:0.3in;
+    display:grid;
+    grid-template-columns:1.1fr 1.6fr;
+    gap:0.5in;
+    align-items:start;
+  }
+  .cover__stamp{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .stamp-row{
+    display:grid;
+    grid-template-columns:1.05in 1fr;
+    gap:14px;
+    align-items:baseline;
+    border-bottom:1px dotted var(--rule);
+    padding-bottom:10px;
+  }
+  .stamp-row:last-child{border-bottom:0;}
+  .stamp-row .k{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+    font-weight:500;
+  }
+  .stamp-row .v{
+    font-family:"Source Serif 4", serif;
+    font-size:11pt;
+    color:var(--navy);
+    font-weight:500;
+  }
+  .cover__abstract p{
+    font-size:11pt;
+    line-height:1.5;
+    color:var(--ink-soft);
+  }
+
+  .cover__foot{
+    background:var(--cream-2);
+    padding:0 var(--margin-x);
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    align-items:center;
+    gap:24px;
+    border-top:1px solid var(--rule);
+    position:relative;
+  }
+  .cover__foot::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;
+    width:1.4in;
+    height:6px;
+    background:var(--navy);
+  }
+  .foot-block{display:flex;flex-direction:column;gap:4px;}
+  .foot-block .k{
+    font-family:"JetBrains Mono", monospace;
+    font-size:6.5pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+  }
+  .foot-block .v{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:13pt;
+    color:var(--navy);
+    font-weight:500;
+    letter-spacing:-0.01em;
+  }
+  .cover__seal{
+    width:1.1in;height:1.1in;
+    display:grid;place-items:center;
+    border:1px solid var(--navy);
+    color:var(--navy);
+    border-radius:50%;
+    text-align:center;
+    line-height:1.1;
+    font-family:"Bricolage Grotesque";
+    font-weight:600;
+    font-size:8.5pt;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    position:relative;
+  }
+  .cover__seal::after{
+    content:"";
+    position:absolute;
+    inset:5px;
+    border:1px dashed var(--navy);
+    border-radius:50%;
+    opacity:.4;
+  }
+  .cover__seal small{
+    display:block;
+    font-size:6pt;
+    letter-spacing:0.16em;
+    color:var(--ochre);
+    margin-top:3px;
+  }
+
+  /* ---------- Inner pages ---------- */
+  .page__hd{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:18px;
+    align-items:end;
+    padding-bottom:14px;
+    border-bottom:2px solid var(--navy);
+    margin-bottom:22px;
+  }
+  .page__hd .num{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:46pt;
+    line-height:0.85;
+    color:var(--ochre);
+    font-weight:300;
+    letter-spacing:-0.04em;
+  }
+  .page__hd .ttl{
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .page__hd .kicker{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--ochre);
+    font-weight:600;
+  }
+  .page__hd h2{font-size:22pt;line-height:1.05;}
+
+  .lede{
+    font-size:13pt;
+    line-height:1.5;
+    color:var(--ink-soft);
+    font-weight:300;
+    text-wrap:pretty;
+    font-style:italic;
+    margin-bottom:14pt;
+  }
+
+  /* drop cap for first paragraph */
+  .dropcap::first-letter{
+    font-family:"Bricolage Grotesque", serif;
+    font-weight:600;
+    color:var(--navy);
+    font-size:54pt;
+    line-height:0.85;
+    float:left;
+    margin:6px 8px -4px 0;
+    padding:0;
+  }
+
+  /* ---------- Stat strip ---------- */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:0;
+    margin:14px 0 18px;
+    border-top:1px solid var(--rule);
+    border-bottom:1px solid var(--rule);
+  }
+  .stats .cell{
+    padding:14px 14px 12px;
+    border-right:1px solid var(--rule-soft);
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .stats .cell:last-child{border-right:0;}
+  .stats .num{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:22pt;
+    line-height:1;
+    color:var(--navy);
+    font-weight:600;
+    letter-spacing:-0.02em;
+  }
+  .stats .num .unit{font-size:12pt;color:var(--ochre);font-weight:500;margin-left:2px;}
+  .stats .lbl{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+    margin-top:4px;
+  }
+
+  /* ---------- Two column body ---------- */
+  .twocol{
+    columns:2;
+    column-gap:0.32in;
+    column-rule:1px solid var(--rule-soft);
+  }
+  .twocol p{margin:0 0 9pt;text-align:justify;hyphens:auto;}
+  .twocol p.dropcap{text-align:left;}
+
+  /* ---------- Matrix ---------- */
+  .matrix-wrap{
+    border:1px solid var(--navy);
+    background:#fff;
+    margin-top:6px;
+  }
+  .matrix{
+    width:100%;
+    border-collapse:collapse;
+    font-size:8.5pt;
+    line-height:1.35;
+  }
+  .matrix th{
+    background:var(--navy);
+    color:var(--cream);
+    text-align:left;
+    font-family:"Bricolage Grotesque", serif;
+    font-weight:500;
+    font-size:9pt;
+    padding:9px 10px;
+    letter-spacing:-0.005em;
+    border-right:1px solid var(--navy-2);
+  }
+  .matrix th:last-child{border-right:0;}
+  .matrix th .sm{
+    display:block;
+    font-family:"JetBrains Mono", monospace;
+    font-size:6.5pt;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    color:var(--ochre-soft);
+    font-weight:500;
+    margin-bottom:2px;
+  }
+  .matrix td{
+    padding:9px 10px;
+    border-right:1px solid var(--rule-soft);
+    border-top:1px solid var(--rule-soft);
+    vertical-align:top;
+    color:var(--ink-soft);
+  }
+  .matrix td:last-child{border-right:0;}
+  .matrix tr.part-head td{
+    background:var(--cream-2);
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--navy);
+    font-weight:600;
+    padding:6px 10px;
+  }
+  .matrix .area-cell{
+    width:1.7in;
+  }
+  .matrix .area-cell .area-num{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:10pt;
+    color:var(--ochre);
+    font-weight:600;
+    margin-right:4px;
+  }
+  .matrix .area-cell .area-name{
+    font-family:"Bricolage Grotesque", serif;
+    color:var(--navy);
+    font-weight:500;
+    font-size:9.5pt;
+    line-height:1.2;
+  }
+  .matrix .col-trend{width:2.0in;}
+  .matrix .col-contrib{width:auto;}
+  .matrix .col-rec{width:2.0in;background:#fffaf0;}
+  .matrix thead th.col-rec{background:var(--navy);}
+
+  /* ---------- Three pillars ---------- */
+  .pillars{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-top:6px;
+    position:relative;
+  }
+  .pillar{
+    background:#fff;
+    border:1px solid var(--rule);
+    padding:18px 16px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .pillar::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:5px;
+    background:var(--ochre);
+  }
+  .pillar:nth-child(2)::before{background:var(--teal);}
+  .pillar:nth-child(3)::before{background:var(--navy);}
+  .pillar .pill-num{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.2em;
+    color:var(--ink-mute);
+  }
+  .pillar h4.pname{
+    font-family:"Bricolage Grotesque", serif;
+    font-weight:600;
+    color:var(--navy);
+    font-size:18pt;
+    letter-spacing:-0.02em;
+    line-height:1;
+    margin:6px 0 10px;
+  }
+  .pillar .pdesc{
+    font-size:9.5pt;
+    color:var(--ink-soft);
+    line-height:1.4;
+    margin-bottom:10px;
+  }
+  .pillar ul{
+    margin:0;padding:0;list-style:none;
+    border-top:1px solid var(--rule-soft);
+  }
+  .pillar li{
+    padding:6px 0;
+    font-size:8.5pt;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--rule-soft);
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  .pillar li::before{
+    content:"";
+    flex:none;
+    width:5px;height:5px;
+    background:var(--ochre);
+    margin-top:6px;
+    transform:rotate(45deg);
+  }
+  .pillar:nth-child(2) li::before{background:var(--teal);}
+  .pillar:nth-child(3) li::before{background:var(--navy);}
+
+  /* central anchor band under pillars */
+  .anchor{
+    margin-top:14px;
+    background:var(--navy);
+    color:var(--cream);
+    padding:14px 18px;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    align-items:center;
+    gap:18px;
+  }
+  .anchor .lab{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7.5pt;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--ochre-soft);
+  }
+  .anchor .txt{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:13pt;
+    line-height:1.3;
+    font-weight:400;
+    text-wrap:balance;
+  }
+  .anchor cite{
+    color:var(--ochre-soft);
+    font-style:normal;
+    font-family:"JetBrains Mono", monospace;
+    font-size:8pt;
+    letter-spacing:0.04em;
+  }
+
+  /* ---------- NSQ alignment grid ---------- */
+  .nsq{
+    margin-top:8px;
+    border:1px solid var(--rule);
+    background:#fff;
+    overflow:hidden;
+    width:100%;
+    max-width:100%;
+  }
+  .nsq__hd{
+    display:grid;
+    grid-template-columns:1.35in repeat(9, minmax(0, 1fr));
+    background:var(--cream-2);
+    border-bottom:1px solid var(--rule);
+  }
+  .nsq__hd .h{
+    padding:8px 4px;
+    font-family:"JetBrains Mono", monospace;
+    font-size:6pt;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--navy);
+    font-weight:600;
+    text-align:center;
+    border-right:1px solid var(--rule-soft);
+    line-height:1.15;
+    min-width:0;
+    overflow-wrap:break-word;
+  }
+  .nsq__hd .h.first{
+    text-align:left;
+    background:var(--navy);
+    color:var(--cream);
+    font-weight:500;
+    letter-spacing:0.18em;
+  }
+  .nsq__hd .h:last-child{border-right:0;}
+  .nsq__hd .h .n{
+    display:block;
+    font-family:"Bricolage Grotesque", serif;
+    font-size:14pt;
+    color:var(--ochre);
+    font-weight:600;
+    letter-spacing:-0.02em;
+    margin-bottom:2px;
+  }
+  .nsq__row{
+    display:grid;
+    grid-template-columns:1.35in repeat(9, minmax(0, 1fr));
+    border-bottom:1px solid var(--rule-soft);
+  }
+  .nsq__row:last-child{border-bottom:0;}
+  .nsq__std{
+    padding:9px 10px;
+    font-size:8pt;
+    line-height:1.2;
+    color:var(--navy);
+    font-family:"Bricolage Grotesque", serif;
+    font-weight:500;
+    border-right:1px solid var(--rule);
+    background:var(--cream);
+    min-width:0;
+    overflow-wrap:break-word;
+    word-break:break-word;
+  }
+  .nsq__std small{
+    display:block;
+    font-family:"JetBrains Mono", monospace;
+    font-size:6.5pt;
+    letter-spacing:0.14em;
+    color:var(--ink-mute);
+    text-transform:uppercase;
+    font-weight:500;
+    margin-bottom:2px;
+  }
+  .nsq__cell{
+    border-right:1px solid var(--rule-soft);
+    display:grid;place-items:center;
+    padding:6px 2px;
+    min-height:32px;
+    min-width:0;
+  }
+  .nsq__cell:last-child{border-right:0;}
+  .nsq__cell .dot{
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--ochre);
+    box-shadow:inset 0 0 0 2px var(--paper);
+    outline:1px solid var(--ochre);
+  }
+  .nsq__cell .dot.partial{
+    background:var(--cream);
+    outline:1px solid var(--ochre);
+    box-shadow:inset 0 0 0 0 var(--paper);
+    width:10px;height:10px;
+  }
+  .nsq__cell .dot.strong{
+    background:var(--navy);
+    outline:1px solid var(--navy);
+  }
+
+  .legend{
+    display:flex;gap:18px;flex-wrap:wrap;
+    margin-top:10px;
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+  }
+  .legend .item{display:inline-flex;align-items:center;gap:6px;}
+  .legend .swatch{width:11px;height:11px;border-radius:50%;}
+  .legend .swatch.s1{background:var(--navy);}
+  .legend .swatch.s2{background:var(--ochre);}
+  .legend .swatch.s3{background:var(--cream);outline:1px solid var(--ochre);}
+
+  /* ---------- Section card pages ---------- */
+  .area-grid{
+    display:grid;
+    grid-template-columns:0.8in 1fr;
+    gap:0 22px;
+    border-top:1px solid var(--rule);
+    padding-top:18px;
+    margin-top:18px;
+  }
+  .area-grid:first-of-type{margin-top:0;border-top:0;padding-top:0;}
+  .area-grid .num{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:38pt;
+    line-height:0.9;
+    color:var(--ochre);
+    font-weight:300;
+    letter-spacing:-0.03em;
+  }
+  .area-grid .num small{
+    display:block;
+    font-family:"JetBrains Mono", monospace;
+    font-size:6.5pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+    margin-top:6px;
+    font-weight:500;
+  }
+  .area-grid .body{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .area-grid h3.area{
+    font-size:15pt;
+    margin-bottom:6px;
+  }
+  .area-block{
+    display:grid;
+    grid-template-columns:1in 1fr;
+    gap:14px;
+    align-items:baseline;
+    padding:6px 0;
+    border-top:1px dotted var(--rule);
+  }
+  .area-block:first-of-type{border-top:0;}
+  .area-block .lbl{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+    font-weight:600;
+    color:var(--ochre);
+  }
+  .area-block.contrib .lbl{color:var(--teal);}
+  .area-block.recommend .lbl{color:var(--navy);}
+  .area-block p{
+    margin:0;
+    font-size:9.5pt;
+    line-height:1.5;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- Pull-quote / case study callout ---------- */
+  .callout{
+    margin:14px 0;
+    background:var(--navy);
+    color:var(--cream);
+    display:grid;
+    grid-template-columns:1.2in 1fr;
+    overflow:hidden;
+    position:relative;
+  }
+  .callout__seal{
+    background:var(--ochre);
+    color:var(--navy);
+    padding:18px 14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap:18px;
+  }
+  .callout__seal .lab{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+  .callout__seal .figure{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:30pt;
+    line-height:0.9;
+    font-weight:600;
+    letter-spacing:-0.03em;
+    color:var(--navy);
+  }
+  .callout__seal .figure small{
+    display:block;
+    font-size:9pt;
+    color:var(--navy);
+    font-weight:500;
+    margin-top:4px;
+    line-height:1.2;
+    letter-spacing:0;
+    text-transform:none;
+    font-family:"Source Serif 4",serif;
+    font-style:italic;
+  }
+  .callout__body{
+    padding:18px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .callout__body .quote{
+    font-family:"Bricolage Grotesque", serif;
+    font-size:14pt;
+    line-height:1.3;
+    color:var(--cream);
+    font-weight:400;
+    text-wrap:pretty;
+    font-style:italic;
+  }
+  .callout__body .attrib{
+    font-family:"JetBrains Mono", monospace;
+    font-size:7.5pt;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ochre-soft);
+    font-weight:500;
+  }
+  .callout__body .body{
+    font-size:9.5pt;
+    color:var(--cream-2);
+    line-height:1.5;
+  }
+
+  /* ---------- Conclusion / closing ---------- */
+  .closing{
+    background:var(--navy);
+    color:var(--cream);
+    padding:0.5in;
+    margin:18px 0 0;
+    position:relative;
+  }
+  .closing::before{
+    content:"";
+    position:absolute;
+    left:0;top:0;
+    height:6px;width:1.5in;
+    background:var(--ochre);
+  }
+  .closing h2{color:var(--cream);font-size:20pt;margin-bottom:10pt;}
+  .closing p{color:var(--cream-2);font-size:10.5pt;line-height:1.55;}
+  .closing .pullout{
+    margin-top:14pt;
+    padding-top:14pt;
+    border-top:1px solid rgba(255,255,255,.18);
+    font-family:"Bricolage Grotesque", serif;
+    font-size:14pt;
+    line-height:1.3;
+    color:var(--ochre-soft);
+    font-weight:400;
+    text-wrap:pretty;
+  }
+
+  /* ---------- References ---------- */
+  .refs{
+    margin-top:10px;
+  }
+  .refs ol{
+    list-style:none;
+    margin:0;padding:0;
+    counter-reset:ref;
+  }
+  .refs li{
+    counter-increment:ref;
+    padding:10px 0 10px 0.6in;
+    border-top:1px solid var(--rule-soft);
+    position:relative;
+    font-size:9.5pt;
+    line-height:1.45;
+    color:var(--ink-soft);
+  }
+  .refs li::before{
+    content:"["counter(ref,decimal-leading-zero)"]";
+    font-family:"JetBrains Mono", monospace;
+    font-size:7.5pt;
+    color:var(--ochre);
+    font-weight:600;
+    letter-spacing:0.08em;
+    position:absolute;
+    left:0;top:12px;
+  }
+  .refs li:first-child{border-top:1px solid var(--navy);}
+  .refs li a{word-break:break-all;}
+
+  /* ---------- Misc ---------- */
+  .ribbon{
+    display:inline-flex;align-items:center;gap:10px;
+    background:var(--cream-2);
+    padding:6px 12px;
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--navy);
+    font-weight:600;
+    border-left:3px solid var(--ochre);
+  }
+  .small{font-size:8.5pt;color:var(--ink-mute);line-height:1.4;}
+
+  /* page sigil */
+  .corner{
+    position:absolute;
+    right:var(--margin-x);
+    top:0.45in;
+    font-family:"JetBrains Mono", monospace;
+    font-size:7pt;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--ink-mute);
+  }
+  .corner b{color:var(--navy);}
+
+  /* ---------- Print ---------- */
+  @media print{
+    @page{size:letter;margin:0;}
+    html,body{background:#fff;}
+    .stack{padding:0;gap:0;background:#fff;}
+    .page{
+      box-shadow:none;
+      page-break-after:always;
+      break-after:page;
+      width:8.5in;
+      height:11in;
+      min-height:11in;
+    }
+    .page:last-child{page-break-after:auto;}
+  }
+
+  /* small screen friendliness */
+  @media (max-width: 900px){
+    body{font-size:11pt;}
+    .stack{padding:12px 6px 60px;}
+    .page{
+      width:100%;
+      min-height:auto;
+      padding:28px 22px;
+    }
+    .twocol{columns:1;}
+    .cover{height:auto;}
+    .cover__title{font-size:38pt;}
+    .nsq__hd, .nsq__row{grid-template-columns: 1.4in repeat(9, minmax(28px, 1fr));}
+    .pillars{grid-template-columns:1fr;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="stack">
+
+<!-- ============================================================ -->
+<!-- PAGE 1, COVER                                                -->
+<!-- ============================================================ -->
+<section class="page page--cover" data-screen-label="01 Cover">
+  <div class="cover">
+    <header class="cover__bar">
+      <div class="cover__logo">
+        <span class="glyph"><img src="assets/cvc-logo.webp" alt="California Community Colleges · California Virtual Campus"></span>
+        <span class="name">A White Paper</span>
+      </div>
+      <div class="meta">OTL 608 &nbsp;·&nbsp; CSU East Bay &nbsp;·&nbsp; May 2026</div>
+    </header>
+
+    <div class="cover__body">
+      <div class="cover__kicker">
+        <span class="num">No. 07</span>
+        <span>Online Program Design Analysis</span>
+      </div>
+
+      <h1 class="cover__title">
+        Designing the next decade of <span class="accent">online learning</span> at California's community colleges.
+      </h1>
+
+      <div class="cover__abstract">
+        <div class="cover__stamp">
+          <div class="stamp-row"><div class="k">Prepared&nbsp;by</div><div class="v">Dominique Wu</div></div>
+          <div class="stamp-row"><div class="k">Course</div><div class="v">OTL 608, Online Program Design</div></div>
+          <div class="stamp-row"><div class="k">Institution</div><div class="v">California State University, East Bay</div></div>
+          <div class="stamp-row"><div class="k">Issued</div><div class="v">May 2026</div></div>
+          <div class="stamp-row"><div class="k">Framework</div><div class="v">NSQ · OLC Scorecard · CHLOE 9</div></div>
+        </div>
+
+        <div>
+          <h4 class="label" style="margin-bottom:8px;">Abstract</h4>
+          <p>This paper analyzes how nine contemporary trends, from standardized course design and Zero Textbook Cost pathways to distributed inter-segmental leadership, are shaping the California Virtual Campus, the system-wide online program of the California Community Colleges. Each trend is examined for its current contribution to program success and paired with a forward-looking recommendation, organized against the National Standards for Quality Online Programs and the OLC Quality Scorecard.</p>
+          <p style="margin-top:10px;color:var(--ink-mute);font-size:9.5pt;font-style:italic;">A scannable summary matrix, three-pillar framework diagram, and NSQ alignment chart are included on the pages that follow.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="cover__foot">
+      <div class="foot-block">
+        <span class="k">Areas Analyzed</span>
+        <span class="v">9</span>
+      </div>
+      <div class="foot-block" style="border-left:1px solid var(--rule);padding-left:18px;">
+        <span class="k">Required NSQ Areas</span>
+        <span class="v">6 <span style="color:var(--ochre);">+</span> 3 selected</span>
+      </div>
+      <div class="cover__seal">
+        <div>
+          NSQ<br>OLC<br>CHLOE
+          <small>Triangulated</small>
+        </div>
+      </div>
+    </footer>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 2, EXECUTIVE SUMMARY                                    -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="02 Executive Summary">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Online Program Design Analysis · CVC</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">00</div>
+    <div class="ttl">
+      <div class="kicker">Executive Summary</div>
+      <h2 class="section">Online learning is at a turning point. California is moving first.</h2>
+    </div>
+  </div>
+
+  <div class="lede">U.S. higher education is in a sustained period of digital reinvention. The California Virtual Campus shows what intentional, system-level online design looks like at scale.</div>
+
+  <div class="stats">
+    <div class="cell">
+      <div class="num">1.8<span class="unit">M</span></div>
+      <div class="lbl">CCC students served</div>
+    </div>
+    <div class="cell">
+      <div class="num">116</div>
+      <div class="lbl">Colleges in the system</div>
+    </div>
+    <div class="cell">
+      <div class="num">1,500<span class="unit">+</span></div>
+      <div class="lbl">POCR-reviewed courses</div>
+    </div>
+    <div class="cell">
+      <div class="num">9</div>
+      <div class="lbl">Trends analyzed</div>
+    </div>
+  </div>
+
+  <div class="twocol">
+    <p class="dropcap">Online learning programs in U.S. higher education are at a turning point. The COVID-19 pandemic accelerated digital adoption, and sustained pressures around equity, completion, and workforce alignment continue to reshape how institutions design, deliver, and evaluate online programs.</p>
+
+    <p>This white paper analyzes how nine contemporary trends and issues are positively shaping the design of the California Virtual Campus (CVC), the system-wide online education program of the California Community Colleges Chancellor's Office (CCCCO).</p>
+
+    <p>Drawing on the Changing Landscape of Online Education (CHLOE) report (Quality Matters &amp; Eduventures, 2024), the National Standards for Quality Online Programs (National Standards for Quality Online Learning, n.d.), and the Online Learning Consortium Quality Scorecard (Online Learning Consortium, n.d.), the analysis covers the six required areas of <strong>learner support</strong>, <strong>curriculum and course design</strong>, <strong>assessment and learner performance</strong>, <strong>equity and access</strong>, <strong>faculty and staff support</strong>, and <strong>technology support</strong>.</p>
+
+    <p>It also covers three additional areas of <strong>program evaluation</strong>, <strong>leadership</strong>, and <strong>financial and material resources</strong>. For each area, the paper identifies a current trend, explains how it contributes to program success, and recommends a strategy for further capitalizing on it.</p>
+
+    <p>The findings indicate that the CVC's investments in standardized course design, Zero Textbook Cost pathways, and inter-segmental partnerships are paying off, and that the system can extend its leadership by deepening analytics, faculty development, and immersive technology readiness.</p>
+  </div>
+
+  <div class="ribbon" style="margin-top:14px;">Reading guide · Matrix p.3 · Three pillars p.4 · NSQ alignment p.5 · Sections begin p.6</div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 02</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 3, SUMMARY MATRIX (THE KEY VISUAL)                       -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="03 Summary Matrix">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Summary Matrix · 9 Areas at a Glance</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">A</div>
+    <div class="ttl">
+      <div class="kicker">Summary Matrix · The whole argument, scannable</div>
+      <h2 class="section">Nine trends, nine contributions, nine moves to make next.</h2>
+    </div>
+  </div>
+
+  <p class="small" style="margin-bottom:14px;">Read this page if you read nothing else. Each row maps a contemporary trend to its current contribution to the CVC's success and the single highest-impact recommendation for taking further advantage of it. Citations are abbreviated; full references appear on the final page.</p>
+
+  <div class="matrix-wrap">
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th class="area-cell"><span class="sm">NSQ Area</span>Program Area</th>
+          <th class="col-trend"><span class="sm">Column 1</span>Trend or Issue</th>
+          <th class="col-contrib"><span class="sm">Column 2</span>Contribution to Program Success</th>
+          <th class="col-rec"><span class="sm">Column 3</span>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="part-head"><td colspan="4">Part I · Six required NSQ program areas</td></tr>
+
+        <tr>
+          <td class="area-cell"><span class="area-num">01</span><span class="area-name">Learner Support</span><br><span class="small">Advising · Counseling · Wraparound</span></td>
+          <td>Online learners increasingly receive comprehensive services that mirror or exceed those of on-campus students (CHLOE, 2024).</td>
+          <td>NetTutor, online counseling, and Canvas-embedded library widgets reduce friction and improve persistence, particularly for learners with work, caregiving, and transportation barriers.</td>
+          <td>Deploy predictive analytics that flag at-risk students within the first three weeks and route them to an online success coach. Add SSO across tutoring, counseling, and library.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">02</span><span class="area-name">Curriculum &amp; Course Design</span></td>
+          <td>Standardized, rubric-aligned course design is a defining feature of high-quality online programs (Cavanagh, 2020).</td>
+          <td>@ONE-administered POCR has produced 1,500+ quality-reviewed courses across the exchange, giving learners a consistent baseline regardless of home college.</td>
+          <td>Move from course-level to program-level review with a CVC Program Quality Scorecard aligned to NSQ. Adopt a shared "read-watch-apply-reflect" module template.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">03</span><span class="area-name">Assessment &amp; Learner Performance</span></td>
+          <td>A shift from high-stakes summative testing toward authentic, formative, and competency-based assessment (Walcutt &amp; Schatz, 2019).</td>
+          <td>Faculty are integrating low-stakes weekly quizzes, performance tasks, and ePortfolios, capturing deeper learning and reducing integrity risk.</td>
+          <td>Build a system-wide ePortfolio that travels across colleges, supporting CPL, micro-credentials, and competency mapping into CSU and UC.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">04</span><span class="area-name">Equity &amp; Access</span></td>
+          <td>OER and Zero Textbook Cost pathways are among the most widely adopted equity strategies, with California leading via AB 798 / AB 132.</td>
+          <td>ZTC removes a meaningful financial barrier, lifting enrollment, persistence, and completion, especially for low-income, first-generation learners.</td>
+          <td>Align ZTC transfer pathways with CSU and UC; recognize OER authoring through stipends, release time, and tenure credit. Extend the open ethos into AR/VR.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">05</span><span class="area-name">Faculty &amp; Staff Support</span></td>
+          <td>Investment in online teaching PD and instructional designer partnerships is a hallmark of mature online programs (CHLOE, 2024).</td>
+          <td>The @ONE network reaches thousands of faculty annually with free certifications, courses, and webinars, and feeds POCR participation in a virtuous cycle.</td>
+          <td>Embed an instructional designer cohort in each district. Tie advancement to documented online teaching competency. Launch a CVC Faculty Fellows program.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">06</span><span class="area-name">Technology Support</span></td>
+          <td>Integrated 24/7 tech support paired with accessibility tools (Ally, ReadSpeaker) is now baseline (OLC, n.d.).</td>
+          <td>The common Canvas instance simplifies support and treats accessibility as a system feature rather than an individual faculty responsibility.</td>
+          <td>Pilot AI-assisted tech support inside Canvas and build immersive technology (AR/VR) readiness into the technology roadmap, aligned with Vision 2030.</td>
+        </tr>
+
+        <tr class="part-head"><td colspan="4">Part II · Three additional areas selected for current impact</td></tr>
+
+        <tr>
+          <td class="area-cell"><span class="area-num">07</span><span class="area-name">Program Evaluation</span></td>
+          <td>Continuous improvement powered by learning analytics and peer-validated rubrics is an emerging strength of mature online systems.</td>
+          <td>NSQ-aligned indicators and OLC Scorecard reviews give CVC credibility with legislators, accreditors, and partner segments.</td>
+          <td>Layer a JCSEE-aligned framework over NSQ/OLC reviews to meet utility, feasibility, propriety, accuracy, and accountability standards.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">08</span><span class="area-name">Leadership</span></td>
+          <td>Distributed and inter-segmental leadership models are shaping large online systems (Walcutt &amp; Schatz, 2019).</td>
+          <td>Vision 2030 partnerships with CSU and UC reduce silos and create a stable governance structure that survives leadership change.</td>
+          <td>Formalize a Vision 2030 Online Learning Leadership Council with rotating chairs. Publish an annual State of Online Learning report co-authored across CCC, CSU, and UC.</td>
+        </tr>
+        <tr>
+          <td class="area-cell"><span class="area-num">09</span><span class="area-name">Financial &amp; Material Resources</span></td>
+          <td>Dedicated state legislation and grant programs are funding online learning infrastructure at unprecedented levels (CCCCO, 2024).</td>
+          <td>Equitable Placement, ZTC, and Strong Workforce funds let small colleges access enterprise-grade resources they could not afford alone.</td>
+          <td>Diversify funding through federal grants and philanthropy targeting AR/VR, AI literacy, and workforce alignment. Establish a CVC innovation fund.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 03</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 4, THREE-PILLAR FRAMEWORK                                -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="04 Three Pillar Framework">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Theoretical Anchor · Cavanagh's Three Pillars</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">B</div>
+    <div class="ttl">
+      <div class="kicker">Framework · The intentional design that holds the paper together</div>
+      <h2 class="section">Three pillars of intentional online program design.</h2>
+    </div>
+  </div>
+
+  <p class="small" style="margin-bottom:14px;max-width:7in;">Cavanagh (2020) argues that high-performing online programs are not the sum of well-designed courses; they are coherent systems built on three interlocking pillars. The CVC was analyzed against this anchor, with each of the nine areas mapping to one or more pillars.</p>
+
+  <div class="pillars">
+
+    <div class="pillar">
+      <div class="pill-num">PILLAR · 01</div>
+      <h4 class="pname">Course</h4>
+      <p class="pdesc">Standardized, rubric-aligned design at the unit level. Every learner meets a consistent baseline of clarity, alignment, and accessibility.</p>
+      <ul>
+        <li>POCR-reviewed exchange courses</li>
+        <li>OEI Course Design Rubric (QM-aligned)</li>
+        <li>Read · Watch · Apply · Reflect template</li>
+        <li>Authentic, formative assessment mix</li>
+      </ul>
+    </div>
+
+    <div class="pillar">
+      <div class="pill-num">PILLAR · 02</div>
+      <h4 class="pname">Support</h4>
+      <p class="pdesc">Wraparound services that meet learners where they are, embedded in the same platform where they take their classes, around the clock.</p>
+      <ul>
+        <li>NetTutor &amp; embedded library widgets</li>
+        <li>Online counseling &amp; mental-health partners</li>
+        <li>Predictive analytics + success coaches</li>
+        <li>24/7 tech support &amp; accessibility tools</li>
+      </ul>
+    </div>
+
+    <div class="pillar">
+      <div class="pill-num">PILLAR · 03</div>
+      <h4 class="pname">Program</h4>
+      <p class="pdesc">Coherence above the course, pathways, governance, evaluation, and resources that hold the system together as a single offering.</p>
+      <ul>
+        <li>NSQ &amp; OLC Scorecard program review</li>
+        <li>Vision 2030 inter-segmental governance</li>
+        <li>JCSEE-aligned evaluation framework</li>
+        <li>State funding &amp; CVC innovation fund</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="anchor">
+    <span class="lab">Throughline</span>
+    <span class="txt">"Programs that are designed, supported, and evaluated as coherent systems consistently outperform those that emerge as the sum of their courses." <cite>Cavanagh, 2020</cite></span>
+  </div>
+
+  <!-- mapping band -->
+  <div style="margin-top:18px;">
+    <h4 class="label" style="margin-bottom:8px;">How the nine areas map to the three pillars</h4>
+    <svg viewBox="0 0 720 220" width="100%" style="display:block;background:#fff;border:1px solid var(--rule);" aria-label="Mapping of nine areas to three pillars">
+      <!-- columns -->
+      <g font-family="Bricolage Grotesque, serif" font-weight="600">
+        <rect x="0" y="0" width="240" height="32" fill="#16243f"/>
+        <rect x="240" y="0" width="240" height="32" fill="#2a6f6a"/>
+        <rect x="480" y="0" width="240" height="32" fill="#b86a2b"/>
+        <text x="120" y="20" fill="#fbf7ed" text-anchor="middle" font-size="11" letter-spacing="1.5">COURSE</text>
+        <text x="360" y="20" fill="#fbf7ed" text-anchor="middle" font-size="11" letter-spacing="1.5">SUPPORT</text>
+        <text x="600" y="20" fill="#fbf7ed" text-anchor="middle" font-size="11" letter-spacing="1.5">PROGRAM</text>
+      </g>
+
+      <!-- area chips -->
+      <g font-family="Source Serif 4, serif" font-size="11" fill="#243a63">
+        <!-- COURSE pillar areas: 02, 03 -->
+        <g transform="translate(20,52)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#b86a2b">02</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Curriculum &amp; Course Design</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">Rubric-aligned, peer-reviewed</text>
+        </g>
+        <g transform="translate(20,108)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#b86a2b">03</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Assessment</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">Authentic &amp; formative</text>
+        </g>
+        <g transform="translate(20,164)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#b86a2b">05</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Faculty &amp; Staff Support</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">@ONE PD network</text>
+        </g>
+
+        <!-- SUPPORT pillar areas: 01, 06 -->
+        <g transform="translate(260,52)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#2a6f6a">01</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Learner Support</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">Advising · counseling · tutoring</text>
+        </g>
+        <g transform="translate(260,108)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#2a6f6a">06</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Technology Support</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">Canvas + accessibility tools</text>
+        </g>
+        <g transform="translate(260,164)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#2a6f6a">04</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Equity &amp; Access</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">OER &amp; ZTC pathways</text>
+        </g>
+
+        <!-- PROGRAM pillar areas: 07, 08, 09 -->
+        <g transform="translate(500,52)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#16243f">07</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Program Evaluation</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">NSQ · OLC · JCSEE</text>
+        </g>
+        <g transform="translate(500,108)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#16243f">08</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Leadership</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">Vision 2030 inter-segmental</text>
+        </g>
+        <g transform="translate(500,164)">
+          <rect width="200" height="46" fill="#f6f1e7" stroke="#d8cfba"/>
+          <text x="14" y="20" font-weight="600" font-family="Bricolage Grotesque, serif" font-size="13" fill="#16243f">09</text>
+          <text x="40" y="20" font-weight="500" fill="#16243f">Financial Resources</text>
+          <text x="40" y="36" font-size="9" fill="#6e6862">State funds + innovation fund</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 04</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 5, NSQ ALIGNMENT CHART                                  -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="05 NSQ Alignment">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Methodology · NSQ Online Programs Alignment</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">C</div>
+    <div class="ttl">
+      <div class="kicker">NSQ Alignment Chart · Methodology in one view</div>
+      <h2 class="section">How the nine areas map to the National Standards for Quality Online Programs.</h2>
+    </div>
+  </div>
+
+  <p class="small" style="max-width:7in;margin-bottom:8px;">The NSQ Online Programs rubric is the primary scaffolding for this analysis. Each row is an NSQ standard; each column is one of the nine areas examined in this paper. Filled markers indicate where a section directly addresses a standard; outlined markers indicate partial or supporting coverage.</p>
+
+  <div class="nsq">
+    <div class="nsq__hd">
+      <div class="h first">NSQ Standard ↓ &nbsp;·&nbsp; Area →</div>
+      <div class="h"><span class="n">01</span>Learner Support</div>
+      <div class="h"><span class="n">02</span>Course Design</div>
+      <div class="h"><span class="n">03</span>Assessment</div>
+      <div class="h"><span class="n">04</span>Equity &amp; Access</div>
+      <div class="h"><span class="n">05</span>Faculty Support</div>
+      <div class="h"><span class="n">06</span>Tech Support</div>
+      <div class="h"><span class="n">07</span>Evaluation</div>
+      <div class="h"><span class="n">08</span>Leadership</div>
+      <div class="h"><span class="n">09</span>Resources</div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD A</small>Institutional Standards</div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD B</small>Leadership &amp; Governance</div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD C</small>Planning</div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD D</small>Curriculum &amp; Course Design</div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD E</small>Instruction</div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD F</small>Student Support</div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD G</small>Faculty &amp; Staff Support</div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+    </div>
+
+    <div class="nsq__row">
+      <div class="nsq__std"><small>STANDARD H</small>Continuous Improvement</div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot"></span></div>
+      <div class="nsq__cell"></div>
+      <div class="nsq__cell"><span class="dot strong"></span></div>
+      <div class="nsq__cell"><span class="dot partial"></span></div>
+      <div class="nsq__cell"></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="swatch s1"></span>Primary alignment</span>
+    <span class="item"><span class="swatch s2"></span>Direct alignment</span>
+    <span class="item"><span class="swatch s3"></span>Partial / supporting</span>
+    <span class="item" style="color:var(--ink-mute);">Source: National Standards for Quality Online Learning, n.d.</span>
+  </div>
+
+  <div style="margin-top:24px;border-top:1px solid var(--rule);padding-top:16px;">
+    <h4 class="label" style="margin-bottom:8px;">How to read the rest of this paper</h4>
+    <p class="small" style="max-width:7in;">Each of the nine areas is presented in the same structure: <strong style="color:var(--ochre);">Trend or Issue</strong> → <strong style="color:var(--teal);">Contribution to Program Success</strong> → <strong style="color:var(--navy);">Recommendation</strong>. The structure deliberately mirrors the columns of the summary matrix on page 3, so a reader can move freely between the at-a-glance view and the deep dive.</p>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 05</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 6, INTRODUCTION & METHODOLOGY                           -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="06 Introduction and Methodology">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Introduction · Methodology</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">01</div>
+    <div class="ttl">
+      <div class="kicker">Section 01 · Setting the table</div>
+      <h2 class="section">Introduction.</h2>
+    </div>
+  </div>
+
+  <div class="twocol">
+    <p class="dropcap">The California Community Colleges (CCC) system serves more than 1.8 million students across 116 colleges, making it the largest system of higher education in the United States. Within the system, the California Virtual Campus (CVC), administered by the CCCCO in partnership with Foothill De Anza, has become the central online education infrastructure connecting students to fully online courses and degrees across colleges.</p>
+
+    <p>The CVC offers a shared course exchange, a common Canvas learning management system instance, and quality processes such as Peer Online Course Review (POCR) (California Community Colleges Chancellor's Office, 2024).</p>
+
+    <p>This white paper analyzes how trends and issues identified through national and state-level research contribute positively to the design of the CVC. It uses the National Standards for Quality (NSQ) Online Programs (National Standards for Quality Online Learning, n.d.) and the Online Learning Consortium Quality Scorecard (Online Learning Consortium, n.d.) as scaffolding, with supplemental data from the CHLOE report (Quality Matters &amp; Eduventures, 2024) and Modernizing Learning (Walcutt &amp; Schatz, 2019).</p>
+
+    <p>The analysis covers nine areas, six of which are required by the assignment and three of which were selected because they have the strongest current impact on the CVC. Each section identifies a trend or issue, explains its contribution to program success, and offers a recommendation for taking further advantage of it.</p>
+  </div>
+
+  <!-- Methodology section -->
+  <div style="margin-top:28px;border-top:2px solid var(--navy);padding-top:18px;">
+    <div class="page__hd" style="border:0;padding:0;margin-bottom:14px;">
+      <div class="num">02</div>
+      <div class="ttl">
+        <div class="kicker">Section 02 · How we got here</div>
+        <h2 class="section">Methodology.</h2>
+      </div>
+    </div>
+
+    <div class="twocol">
+      <p>Trends and issues were identified by triangulating three sources. <strong>First</strong>, the CHLOE report, the most comprehensive annual survey of online learning leaders in the United States, supplied current data on enrollment patterns, faculty support, and course design practices (Quality Matters &amp; Eduventures, 2024).</p>
+
+      <p><strong>Second</strong>, the NSQ Online Programs rubric provided the program areas used to organize the analysis (National Standards for Quality Online Learning, n.d.).</p>
+
+      <p><strong>Third</strong>, the OLC Quality Scorecard for the Administration of Online Programs supplied additional benchmarking criteria (Online Learning Consortium, n.d.). The CVC was selected as the program of analysis because it represents a state-level online program with a substantial public footprint and an active commitment to evidence-based design.</p>
+    </div>
+
+    <!-- Sources panel -->
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <div style="background:#fff;border:1px solid var(--rule);padding:14px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.16em;color:var(--ochre);font-weight:600;text-transform:uppercase;">Source · 01</div>
+        <h4 style="font-family:'Bricolage Grotesque',serif;font-size:13pt;color:var(--navy);margin:6px 0 4px;font-weight:600;letter-spacing:-0.01em;">CHLOE 9</h4>
+        <p class="small" style="margin:0;">National survey of online learning leaders. Supplies enrollment, faculty, and course-design data.</p>
+      </div>
+      <div style="background:#fff;border:1px solid var(--rule);padding:14px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.16em;color:var(--ochre);font-weight:600;text-transform:uppercase;">Source · 02</div>
+        <h4 style="font-family:'Bricolage Grotesque',serif;font-size:13pt;color:var(--navy);margin:6px 0 4px;font-weight:600;letter-spacing:-0.01em;">NSQ Online Programs</h4>
+        <p class="small" style="margin:0;">Eight-standard rubric. Provides the program areas used to structure this paper.</p>
+      </div>
+      <div style="background:#fff;border:1px solid var(--rule);padding:14px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.16em;color:var(--ochre);font-weight:600;text-transform:uppercase;">Source · 03</div>
+        <h4 style="font-family:'Bricolage Grotesque',serif;font-size:13pt;color:var(--navy);margin:6px 0 4px;font-weight:600;letter-spacing:-0.01em;">OLC Quality Scorecard</h4>
+        <p class="small" style="margin:0;">Administration-of-online-programs benchmark. Supplies additional success criteria.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 06</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 7, PART I (Areas 1, 2)                                  -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="07 Areas 01-02">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Part I · Required NSQ Program Areas</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">I</div>
+    <div class="ttl">
+      <div class="kicker">Part I · Six required NSQ program areas</div>
+      <h2 class="section">The six trends California is already capitalizing on.</h2>
+    </div>
+  </div>
+
+  <!-- Area 1 -->
+  <div class="area-grid">
+    <div class="num">01<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Learner Support</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Advising, counseling, and wraparound services</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>A persistent CHLOE finding is that online learners require, and increasingly receive, comprehensive support services that mirror or exceed those of on-campus students, including online tutoring, counseling, library services, and career advising (Quality Matters &amp; Eduventures, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>The CVC's integration of services such as NetTutor, online counseling appointments, and Canvas-embedded library widgets has measurably increased course completion and reduced equity gaps. Wraparound support is correlated with retention because online learners often face logistical barriers, including work, caregiving, and transportation, that traditional support hours cannot accommodate (Walcutt &amp; Schatz, 2019). When learners can access advising, tutoring, and mental health services from within the same platform where they take their classes, friction is reduced and persistence improves.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Expand proactive outreach by deploying predictive learning analytics that flag at-risk students within the first three weeks of a course and trigger personalized outreach from an online success coach. Pair this with extended mental health partnerships so that psychosocial support keeps pace with academic intervention. Adopting a single sign-on across tutoring, counseling, and library platforms would further reduce friction for learners.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area 2 -->
+  <div class="area-grid">
+    <div class="num">02<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Curriculum and Course Design</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Standardized, rubric-aligned design</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Standardized, rubric-aligned course design has emerged as a defining feature of high-quality online programs (Cavanagh, 2020; Quality Matters &amp; Eduventures, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>The CVC's @ONE-administered Peer Online Course Review (POCR) process, aligned with the Online Education Initiative Course Design Rubric (a state-customized adaptation of Quality Matters standards), has produced more than 1,500 quality-reviewed courses available through the course exchange. Faculty who complete POCR report stronger alignment among learning objectives, content, activities, and assessments, which is the heart of Cavanagh's (2020) intentional design framework. This consistency benefits students who take courses across multiple colleges through the exchange, because they encounter a similar quality baseline regardless of their home college.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Move from course-level review to program-level review by piloting a CVC Program Quality Scorecard aligned with NSQ Online Programs (National Standards for Quality Online Learning, n.d.), so that pathways and degree maps are evaluated for coherence, not just individual courses. Embedding a common module template, with read, watch, apply, and reflect components, across exchange courses would also strengthen the learner experience.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 07</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 8, PART I (Areas 3, 4 + Radtke callout)                 -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="08 Areas 03-04 with Radtke Callout">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Part I · Areas 03-04</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <!-- Area 3 -->
+  <div class="area-grid" style="margin-top:0;">
+    <div class="num">03<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Assessment and Learner Performance</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Authentic, formative, and competency-based</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>A shift away from high-stakes summative testing toward authentic, formative, and competency-based assessment is a defining feature of future-focused learning ecosystems (Walcutt &amp; Schatz, 2019).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>Across the CVC, faculty are integrating low-stakes weekly quizzes, performance tasks, and ePortfolio-based assessments to capture deeper learning. This aligns with the recommendation in Modernizing Learning to decrease reliance on high-stakes assessments while increasing formative and experiential measures (Walcutt &amp; Schatz, 2019). Authentic assessment also reduces the integrity risks associated with online testing, because students are evaluated through artifacts that demonstrate their learning rather than through one-time, easily compromised exams.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Develop a system-wide ePortfolio infrastructure that travels with students across colleges, supporting credit for prior learning, micro-credential validation, and competency mapping for transfer to California State University (CSU) and the University of California (UC) systems. Pair this with a CVC assessment framework that requires every online program to publish its mix of formative, authentic, and summative measures.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area 4, leads into Radtke -->
+  <div class="area-grid">
+    <div class="num">04<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Equity and Access</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">OER &amp; Zero Textbook Cost pathways</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Open Educational Resources (OER) and Zero Textbook Cost (ZTC) degree pathways are among the most widely adopted equity strategies in U.S. higher education, with California leading through Assembly Bill 798 and Assembly Bill 132 funding (California Community Colleges Chancellor's Office, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>ZTC pathways remove a significant financial barrier for low-income students and have been linked to higher enrollment, persistence, and completion. Stories from open advocates illustrate why equity-focused practices have spread so quickly, financial barriers are learning barriers, and OER offers a sustainable, scalable response (see callout, right).</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Expand ZTC beyond two-year degrees by partnering with CSU and UC to align ZTC transfer pathways, and incentivize faculty OER authoring through dedicated time, stipends, and tenure credit recognition. Extending the open ethos into emerging immersive technologies (AR and VR) would also help ensure that the next wave of educational innovation remains accessible to every learner, not just those at well-resourced institutions.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Radtke pull-quote callout -->
+  <div class="callout" role="figure" aria-label="Mini case study: Trudi Radtke">
+    <div class="callout__seal">
+      <div class="lab">Mini Case<br>Study</div>
+      <div class="figure">100<small>OER textbooks created or revised for the CCC system</small></div>
+    </div>
+    <div class="callout__body">
+      <div class="quote">"Free OER materials were a key reason I could persist in college."</div>
+      <div class="attrib">Trudi Radtke · Open advocate, low-income, first-generation graduate</div>
+      <p class="body">Radtke later helped create or revise more than 100 OER textbooks for the CCC system, with a particular focus on Title V Hispanic-serving institutions such as Imperial Valley College (XReality Podcast, 2022). Stories like Radtke's show why the equity case for OER is not abstract, it is the difference between persisting and dropping out for a generation of low-income, first-generation learners.</p>
+    </div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 08</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 9, PART I (Areas 5, 6)                                  -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="09 Areas 05-06">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Part I · Areas 05-06</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <!-- Area 5 -->
+  <div class="area-grid" style="margin-top:0;">
+    <div class="num">05<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Faculty and Staff Support</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Online teaching PD &amp; instructional designer partnerships</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Investment in online teaching professional development and instructional designer partnerships is a hallmark of mature online programs (Quality Matters &amp; Eduventures, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>The CCCCO's @ONE professional development network offers free certification pathways, courses, and webinars in online teaching, accessibility, and equity-minded design, reaching thousands of faculty annually. This built capacity allowed the system to pivot quickly during the pandemic and to sustain quality afterward. Faculty who participate in @ONE programs are also more likely to engage in POCR, creating a virtuous cycle between professional development and course quality.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Establish a system-wide instructional designer cohort embedded in each district to provide ongoing course-design partnership and to scale POCR participation. Tie advancement to documented online teaching competency, and create a CVC Faculty Fellows program that recognizes excellence in online pedagogy and provides release time for mentorship and curriculum development.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area 6 -->
+  <div class="area-grid">
+    <div class="num">06<small>Required</small></div>
+    <div class="body">
+      <h3 class="area">Technology Support</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">24/7 support &amp; accessibility tools as baseline</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Integrated 24/7 technical support combined with accessibility tools (such as Ally and ReadSpeaker) has become a baseline expectation for online programs (Online Learning Consortium, n.d.).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>The CVC's common Canvas instance simplifies tech support across the system and enables shared accessibility tools. Centralized technology removes friction, particularly for students enrolled at multiple colleges through the course exchange, and it ensures that accessibility is treated as a system feature rather than as an individual faculty responsibility.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Pilot AI-assisted tech support that offers real-time troubleshooting and accessibility recommendations within Canvas, and build immersive technology readiness (AR and VR) into the technology roadmap to align with CCCCO Vision 2030 spatial computing initiatives. A shared AR and VR content repository would also lower the barrier for faculty experimentation.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Part transition strip -->
+  <div style="margin-top:24px;background:var(--cream-2);padding:14px 18px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:18px;border-left:5px solid var(--ochre);">
+    <div style="font-family:'Bricolage Grotesque',serif;font-size:30pt;font-weight:300;color:var(--ochre);line-height:1;">II</div>
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:var(--navy);font-weight:600;">Part II · Three additional areas →</div>
+      <div style="font-family:'Bricolage Grotesque',serif;font-size:14pt;color:var(--navy);font-weight:500;letter-spacing:-0.01em;margin-top:2px;">Program evaluation, leadership, and resources, the system-level scaffolding.</div>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.18em;color:var(--ink-mute);">Continues p.10 →</div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 09</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 10, PART II (Areas 7, 8, 9)                             -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="10 Areas 07-09">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Part II · Additional Areas Selected</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">II</div>
+    <div class="ttl">
+      <div class="kicker">Part II · Three additional areas selected for current impact</div>
+      <h2 class="section">The system-level scaffolding that makes everything else hold.</h2>
+    </div>
+  </div>
+
+  <!-- Area 7 -->
+  <div class="area-grid" style="margin-top:0;border-top:0;padding-top:0;">
+    <div class="num">07<small>Selected</small></div>
+    <div class="body">
+      <h3 class="area">Program Evaluation</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Continuous improvement powered by analytics &amp; peer rubrics</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Continuous program improvement powered by learning analytics and peer-validated rubrics is an emerging strength in mature online systems (Quality Matters &amp; Eduventures, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>The CVC uses NSQ-aligned indicators and OLC Scorecard reviews to benchmark progress. Annual reports inform funding decisions and expansion priorities, and the Vision 2030 framework establishes shared metrics across colleges (California Community Colleges Chancellor's Office, 2024). This evidence-based approach gives the CVC credibility with state legislators, regional accreditors, and partner segments.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Adopt a Joint Committee on Standards for Educational Evaluation (JCSEE) aligned program evaluation framework to ensure that evaluations meet the utility, feasibility, propriety, accuracy, and accountability standards expected of professional evaluation. Layer this framework on top of existing NSQ and OLC reviews to strengthen the credibility of CVC reporting with policymakers and accreditors.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area 8 -->
+  <div class="area-grid">
+    <div class="num">08<small>Selected</small></div>
+    <div class="body">
+      <h3 class="area">Leadership</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">Distributed, inter-segmental governance</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Distributed and inter-segmental leadership models are shaping large online systems (Walcutt &amp; Schatz, 2019).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>Through Vision 2030, the CCCCO has partnered with CSU and UC on shared transfer pathways, OER investments, and learning analytics. This distributed leadership reduces silos and aligns goals across the three public segments of California higher education. It also creates a stable governance structure that survives changes in individual leadership, which is critical for a multi-year initiative.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Formalize a Vision 2030 Online Learning Leadership Council with rotating chair seats from each college and inter-segmental partner, ensuring sustained momentum. Publish an annual State of Online Learning report co-authored across CCC, CSU, and UC to maintain shared visibility into outcomes, gaps, and priorities.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area 9 -->
+  <div class="area-grid">
+    <div class="num">09<small>Selected</small></div>
+    <div class="body">
+      <h3 class="area">Financial and Material Resources</h3>
+      <p class="small" style="margin:0 0 6px;font-style:italic;color:var(--ink-mute);">State legislation, grants, and a system-level funding model</p>
+
+      <div class="area-block trend">
+        <div class="lbl">Trend</div>
+        <p>Dedicated state legislation and grant programs are funding online learning infrastructure at unprecedented levels (California Community Colleges Chancellor's Office, 2024).</p>
+      </div>
+
+      <div class="area-block contrib">
+        <div class="lbl">Contribution</div>
+        <p>California's Equitable Placement, ZTC, and Strong Workforce funds have allowed the CVC to invest in shared technology, professional development, and equity initiatives without burdening individual colleges. This system-level funding model spreads cost and risk, making it possible for smaller colleges to access enterprise-grade resources they could not afford individually.</p>
+      </div>
+
+      <div class="area-block recommend">
+        <div class="lbl">Recommend</div>
+        <p>Diversify funding by pursuing federal grants and philanthropic partnerships that target immersive technology, AI literacy, and workforce alignment, ensuring sustainability beyond state appropriations. Establish a CVC innovation fund that allows colleges to pilot emerging practices, with a clear path to scaling successful pilots system-wide.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 10</span>
+  </div>
+</section>
+
+
+<!-- ============================================================ -->
+<!-- PAGE 11, CONCLUSION + REFERENCES                             -->
+<!-- ============================================================ -->
+<section class="page" data-screen-label="11 Conclusion and References">
+  <div class="runner runner--top">
+    <span class="mark"><span class="swatch"></span>Conclusion · References</span>
+    <span>Wu · OTL 608 · 2026</span>
+  </div>
+
+  <div class="page__hd">
+    <div class="num">03</div>
+    <div class="ttl">
+      <div class="kicker">Conclusion · The throughline</div>
+      <h2 class="section">Intentionality, at scale, is the defining challenge of the next decade.</h2>
+    </div>
+  </div>
+
+  <div class="closing">
+    <h2>Conclusion.</h2>
+    <p>The California Virtual Campus exemplifies how a state-level online program can leverage contemporary trends, such as standardized course design, OER, integrated learner support, distributed leadership, and analytics-driven evaluation, to advance equitable and scalable online education. Each of the nine areas analyzed in this paper shows clear evidence of trend-driven success, but each also points to opportunities for further growth.</p>
+    <p>By extending these strengths into program-level review, immersive technology, and JCSEE-aligned evaluation, the CCCCO can position the CVC as a national model for the next decade of online learning.</p>
+    <div class="pullout">"The throughline across all nine areas is intentionality: programs that are designed, supported, and evaluated as coherent systems consistently outperform those that emerge as the sum of their courses." <span style="color:var(--cream);font-family:'JetBrains Mono',monospace;font-size:8pt;letter-spacing:.1em;">CAVANAGH, 2020</span></div>
+    <p style="margin-top:14pt;">Sustaining that intentionality at scale will be the defining challenge, and opportunity, of the next era of online learning in California.</p>
+  </div>
+
+  <!-- References -->
+  <div style="margin-top:24px;">
+    <div class="page__hd" style="border:0;padding:0;margin-bottom:10px;">
+      <div class="num">04</div>
+      <div class="ttl">
+        <div class="kicker">References · APA 7</div>
+        <h2 class="section">Works cited.</h2>
+      </div>
+    </div>
+
+    <div class="refs">
+      <ol>
+        <li>California Community Colleges Chancellor's Office. (2024). <em>Vision 2030: A roadmap for California community colleges.</em> <a href="https://www.cccco.edu/" target="_blank" rel="noopener">https://www.cccco.edu/</a></li>
+        <li>Cavanagh, T. (2020, July 27). The importance of intentional online program design. <em>The EvoLLLution.</em> <a href="https://evolllution.com/programming/program_planning/the-importance-of-intentional-online-program-design/" target="_blank" rel="noopener">https://evolllution.com/programming/program_planning/the-importance-of-intentional-online-program-design/</a></li>
+        <li>National Standards for Quality Online Learning. (n.d.). <em>Quality online programs.</em> <a href="https://www.nsqol.org/the-standards/quality-online-programs/" target="_blank" rel="noopener">https://www.nsqol.org/the-standards/quality-online-programs/</a></li>
+        <li>Online Learning Consortium. (n.d.). <em>OLC quality scorecard for online program review.</em> <a href="https://onlinelearningconsortium.org/quality/review-services/program-reviews/" target="_blank" rel="noopener">https://onlinelearningconsortium.org/quality/review-services/program-reviews/</a></li>
+        <li>Quality Matters, &amp; Eduventures. (2024). <em>CHLOE 9: Strategy shift, the changing landscape of online education.</em> <a href="https://www.qualitymatters.org/" target="_blank" rel="noopener">https://www.qualitymatters.org/</a></li>
+        <li>Walcutt, J. J., &amp; Schatz, S. (Eds.). (2019). <em>Modernizing learning: Building the future learning ecosystem.</em> Government Publishing Office. <a href="https://files.eric.ed.gov/fulltext/ED603521.pdf" target="_blank" rel="noopener">https://files.eric.ed.gov/fulltext/ED603521.pdf</a></li>
+        <li>XReality Podcast. (2022). <em>55. AI &amp; XR for open &amp; remote education with Trudi Radtke</em> [Video]. YouTube. <a href="https://www.youtube.com/watch?v=ohaqxtGRMvY" target="_blank" rel="noopener">https://www.youtube.com/watch?v=ohaqxtGRMvY</a></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- end colophon -->
+  <div style="margin-top:22px;border-top:1px solid var(--rule);padding-top:12px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;">
+    <p class="small" style="margin:0;">Prepared by Dominique Wu · OTL 608, California State University, East Bay · May 2026. Visual treatment follows Purdue OWL white-paper genre conventions: scannable matrix, framework diagram, mini case study callout, and standards alignment chart.</p>
+    <div style="display:flex;align-items:center;gap:14px;flex:none;white-space:nowrap;">
+      <img src="assets/cvc-logo.webp" alt="CVC" style="height:26px;width:auto;display:block;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);">END</div>
+    </div>
+  </div>
+
+  <div class="runner runner--bot">
+    <span>White Paper · 01</span>
+    <span>Page 11</span>
+  </div>
+</section>
+
+
+</div>
+</body>
+</html>
